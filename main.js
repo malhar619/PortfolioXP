@@ -420,42 +420,237 @@ document.querySelectorAll('.skill-card').forEach(card => {
 })();
 
 
-/* ─── 15. CONTACT FORM (fake submit) ────────────── */
-function submitForm() {
-  const name  = document.getElementById('cName').value.trim();
-  const email = document.getElementById('cEmail').value.trim();
-  const msg   = document.getElementById('cMsg').value.trim();
-  const msgEl = document.getElementById('formMsg');
 
-  if (!name || !email || !msg) {
-    msgEl.textContent = '⚠️  Please fill in all fields.';
-    msgEl.className   = 'form-message';
-    msgEl.style.cssText = 'display:block; background:rgba(255,80,80,0.08); border:1px solid rgba(255,80,80,0.3); color:#ff6b6b; padding:0.9rem 1.2rem; border-radius:8px; margin-bottom:1.5rem; font-size:0.88rem;';
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* ─────────────────────────────────────────────────────────
+   REPLACE your existing submitForm() in portfolio/js/main.js
+   with this function.
+
+   Set API_BASE to your Railway URL after deployment.
+   For local dev: http://localhost:8000
+   For production: https://your-app.up.railway.app
+───────────────────────────────────────────────────────── */
+
+const API_BASE = "https://portfolio-backend-production-f4d5.up.railway.app"; // ← change this
+
+async function submitForm() {
+  const nameEl  = document.getElementById("cName");
+  const emailEl = document.getElementById("cEmail");
+  const msgEl   = document.getElementById("cMsg");
+  const formMsg = document.getElementById("formMsg");
+  const btn     = document.querySelector(".btn-primary.full-width");
+
+  const name    = nameEl.value.trim();
+  const email   = emailEl.value.trim();
+  const message = msgEl.value.trim();
+
+  // ── Client-side validation ──────────────────────────
+  clearFormError(formMsg);
+
+  if (!name || !email || !message) {
+    showFormError(formMsg, "⚠️  Please fill in all fields.");
+    return;
+  }
+  if (name.length < 2) {
+    showFormError(formMsg, "⚠️  Name must be at least 2 characters.");
+    return;
+  }
+  if (!isValidEmail(email)) {
+    showFormError(formMsg, "⚠️  Please enter a valid email address.");
+    return;
+  }
+  if (message.length < 10) {
+    showFormError(formMsg, "⚠️  Message must be at least 10 characters.");
     return;
   }
 
-  const btn = document.querySelector('.btn-primary.full-width');
-  btn.textContent = 'Sending…';
-  btn.disabled    = true;
+  // ── Loading state ───────────────────────────────────
+  btn.disabled   = true;
+  btn.innerHTML  = `<span class="spinner"></span> Sending…`;
 
-  setTimeout(() => {
-    msgEl.textContent = `✅  Got it, ${name}! I'll reply to ${email} soon.`;
-    msgEl.className   = 'form-message success';
-    msgEl.style.cssText = 'display:block;';
-    btn.innerHTML   = 'Message Sent ✓';
-    btn.style.background = 'var(--accent3)';
-    btn.style.color      = 'var(--bg)';
-    document.getElementById('cName').value  = '';
-    document.getElementById('cEmail').value = '';
-    document.getElementById('cMsg').value   = '';
-    setTimeout(() => {
-      btn.innerHTML = 'Send Message <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>';
-      btn.disabled  = false;
-      btn.style.background = '';
-      btn.style.color      = '';
-    }, 4000);
-  }, 1200);
+  try {
+    const response = await fetch(`${API_BASE}/api/contact`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+      },
+      body: JSON.stringify({ name, email, message }),
+    });
+
+    const data = await response.json();
+
+    // ── Handle response ─────────────────────────────
+    if (response.ok && data.success) {
+      // Success
+      showFormSuccess(formMsg, `✅  Got it, ${name}! I'll reply to you soon.`);
+      btn.innerHTML  = "Message Sent ✓";
+      btn.style.background = "var(--accent3)";
+      btn.style.color      = "var(--bg)";
+      nameEl.value  = "";
+      emailEl.value = "";
+      msgEl.value   = "";
+
+      // Reset button after 5s
+      setTimeout(resetBtn, 5000);
+
+    } else if (response.status === 429) {
+      // Rate limited
+      showFormError(formMsg, "⚠️  Too many requests. Please wait a minute and try again.");
+      resetBtn();
+
+    } else if (response.status === 422) {
+      // Validation error from FastAPI
+      const detail = data.detail?.[0]?.msg || "Invalid input. Please check your details.";
+      showFormError(formMsg, `⚠️  ${detail}`);
+      resetBtn();
+
+    } else {
+      // Server error
+      showFormError(formMsg, "❌  Something went wrong. Please email me directly.");
+      resetBtn();
+    }
+
+  } catch (err) {
+    // Network error
+    console.error("Contact form error:", err);
+    showFormError(formMsg, "❌  Network error. Please check your connection or email me directly.");
+    resetBtn();
+  }
+
+  function resetBtn() {
+    btn.disabled     = false;
+    btn.style.background = "";
+    btn.style.color      = "";
+    btn.innerHTML = `Send Message
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="22" y1="2" x2="11" y2="13"/>
+        <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+      </svg>`;
+  }
 }
+
+// ── Helpers ─────────────────────────────────────────────
+function isValidEmail(email) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
+function showFormError(el, msg) {
+  el.textContent = msg;
+  el.style.cssText = `
+    display: block;
+    background: rgba(255,80,80,0.08);
+    border: 1px solid rgba(255,80,80,0.3);
+    color: #ff6b6b;
+    padding: 0.9rem 1.2rem;
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+    font-size: 0.88rem;
+  `;
+}
+
+function showFormSuccess(el, msg) {
+  el.textContent = msg;
+  el.style.cssText = `
+    display: block;
+    background: rgba(0,255,157,0.08);
+    border: 1px solid rgba(0,255,157,0.3);
+    color: var(--accent3);
+    padding: 0.9rem 1.2rem;
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+    font-size: 0.88rem;
+  `;
+}
+
+function clearFormError(el) {
+  el.style.display = "none";
+  el.textContent   = "";
+}
+
+
+
+
+
+
+
+
+
+
+
+
+// /* ─── 15. CONTACT FORM (fake submit) ────────────── */
+// function submitForm() {
+//   const name  = document.getElementById('cName').value.trim();
+//   const email = document.getElementById('cEmail').value.trim();
+//   const msg   = document.getElementById('cMsg').value.trim();
+//   const msgEl = document.getElementById('formMsg');
+
+//   if (!name || !email || !msg) {
+//     msgEl.textContent = '⚠️  Please fill in all fields.';
+//     msgEl.className   = 'form-message';
+//     msgEl.style.cssText = 'display:block; background:rgba(255,80,80,0.08); border:1px solid rgba(255,80,80,0.3); color:#ff6b6b; padding:0.9rem 1.2rem; border-radius:8px; margin-bottom:1.5rem; font-size:0.88rem;';
+//     return;
+//   }
+
+//   const btn = document.querySelector('.btn-primary.full-width');
+//   btn.textContent = 'Sending…';
+//   btn.disabled    = true;
+
+//   setTimeout(() => {
+//     msgEl.textContent = `✅  Got it, ${name}! I'll reply to ${email} soon.`;
+//     msgEl.className   = 'form-message success';
+//     msgEl.style.cssText = 'display:block;';
+//     btn.innerHTML   = 'Message Sent ✓';
+//     btn.style.background = 'var(--accent3)';
+//     btn.style.color      = 'var(--bg)';
+//     document.getElementById('cName').value  = '';
+//     document.getElementById('cEmail').value = '';
+//     document.getElementById('cMsg').value   = '';
+//     setTimeout(() => {
+//       btn.innerHTML = 'Send Message <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>';
+//       btn.disabled  = false;
+//       btn.style.background = '';
+//       btn.style.color      = '';
+//     }, 4000);
+//   }, 1200);
+// }
 
 
 /* ─── 16. GLITCH HOVER ON HERO NAME ────────────── */
