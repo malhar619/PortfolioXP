@@ -857,3 +857,109 @@ ul { list-style: none; }
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
+
+/* ─── PYKE MASCOT ───────────────────────────────────── */
+#pyke-container {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  z-index: 500;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: none;
+}
+
+#pyke-avatar {
+  width: 100px;
+  height: 100px;
+  filter: drop-shadow(0 0 18px rgba(0,200,255,0.35));
+  transition: filter 0.3s ease, transform 0.3s ease;
+  border-radius: 50%;
+}
+
+#pyke-container:hover #pyke-avatar {
+  filter: drop-shadow(0 0 32px rgba(0,200,255,0.65));
+  transform: scale(1.06);
+}
+
+.pyke-bubble {
+  position: absolute;
+  bottom: 115px;
+  right: 0;
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 14px 14px 4px 14px;
+  padding: 0.65rem 1rem;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--accent);
+  white-space: nowrap;
+  max-width: 220px;
+  white-space: normal;
+  text-align: left;
+  box-shadow: 0 0 24px rgba(0,200,255,0.15);
+  opacity: 0;
+  transform: translateY(8px) scale(0.95);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  pointer-events: none;
+  line-height: 1.5;
+}
+
+.pyke-bubble.visible {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+.pyke-bubble::after {
+  content: '';
+  position: absolute;
+  bottom: -7px;
+  right: 18px;
+  width: 12px;
+  height: 12px;
+  background: var(--surface);
+  border-right: 1px solid var(--border2);
+  border-bottom: 1px solid var(--border2);
+  transform: rotate(45deg);
+}
+
+.pyke-hint {
+  font-size: 0.6rem;
+  color: var(--text3);
+  letter-spacing: 0.08em;
+  text-align: center;
+  opacity: 0.6;
+  transition: opacity 0.3s;
+}
+
+#pyke-container:hover .pyke-hint {
+  opacity: 0;
+}
+
+/* Pyke pulse ring */
+#pyke-container::before {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  border: 1px solid rgba(0,200,255,0.2);
+  animation: pyke-pulse 3s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes pyke-pulse {
+  0%,100% { transform: scale(1); opacity: 0.4; }
+  50%      { transform: scale(1.25); opacity: 0; }
+}
+
+/* Hide on very small screens */
+@media (max-width: 480px) {
+  #pyke-container { bottom: 1rem; right: 1rem; }
+  #pyke-avatar { width: 72px; height: 72px; }
+  #pyke-container::before { width: 72px; height: 72px; }
+}
